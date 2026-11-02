@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Pro Modular OS v6</title>
+  
+  <!-- Embedded Manifest for Direct PWABuilder Detection -->
+  <link rel="manifest" href='data:application/manifest+json;charset=utf-8,{"name":"My Pro Trader","short_name":"Trader","start_url":"./","display":"standalone","background_color":"#0b0e14","theme_color":"#2962ff"}'>
+
+  <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+  <style id="global-custom-css">
+    :root {
+      --bg: #0b0e14;
+      --panel: #131722;
+      --input: #1e222d;
+      --accent: #2962ff;
+      --text: #e1e3e6;
+      --border: #2a2e39;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    #app-workspace { flex: 1; display: flex; flex-direction: column; overflow-y: auto; width: 100%; height: 100%; }
+    .module-box { width: 100%; position: relative; }
+    
+    .bar { display: flex; gap: 6px; padding: 7px 8px; background: var(--panel); border-bottom: 1px solid var(--border); align-items: center; overflow-x: auto; scrollbar-width: none; }
+    .bar::-webkit-scrollbar { display: none; }
+    .inp { flex: 1; min-width: 90px; padding: 7px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--input); color: var(--text); font-size: 12px; outline: none; }
+    .btn { padding: 7px 11px; background: var(--accent); color: #fff; border: none; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; white-space: nowrap; }
+    .chip { padding: 5px 10px; background: var(--input); border: 1px solid var(--border); border-radius: 5px; color: #b2b5be; font-size: 11px; white-space: nowrap; cursor: pointer; }
+    .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    #ai-fab { position: fixed; bottom: 16px; right: 16px; background: linear-gradient(135deg, #00e676, #2962ff); color: #fff; border: none; border-radius: 50px; padding: 10px 16px; font-weight: bold; font-size: 13px; box-shadow: 0 4px 15px rgba(0,0,0,0.6); z-index: 9999; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+    #ai-drawer { position: fixed; bottom: -100%; left: 0; width: 100%; max-height: 85vh; background: #131722; border-top: 2px solid #00e676; border-radius: 16px 16px 0 0; padding: 14px; transition: 0.3s ease; z-index: 10000; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 -10px 30px rgba(0,0,0,0.8); }
+    #ai-drawer.open { bottom: 0; }
+    .mod-tag { display: inline-flex; align-items: center; gap: 5px; background: #1e222d; border: 1px solid #2a2e39; padding: 4px 8px; border-radius: 4px; font-size: 11px; margin: 2px; }
+    .mod-tag span { color: #ef5350; cursor: pointer; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <div id="app-workspace"></div>
+
+  <button id="ai-fab" onclick="toggleAI()">🚀 AI Builder</button>
+
+  <div id="ai-drawer">
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #2a2e39; padding-bottom:8px;">
+      <strong style="font-size:14px; color:#00e676;">🚀 Full-Access AI Architect</strong>
+      <div style="display:flex; gap:6px;">
+        <button class="btn" style="background:#ef5350; padding:4px 8px; font-size:11px;" onclick="factoryReset()">Reset App</button>
+        <button class="btn" style="background:#2a2e39; padding:4px 8px; font-size:11px;" onclick="toggleAI()">✕</button>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:6px;">
+      <input type="text" id="geminiKey" class="inp" value="AQ.Ab8RN6JUfzPWRr_oI8estK3YogPaTtkrsHj7he0knZKxfFLyJg" onchange="saveApiKey()">
+      <input type="text" id="modelName" class="inp" style="max-width:135px; color:#00e676; font-weight:bold;" value="gemini-3.8-flash" title="Model Name">
+    </div>
+    
+    <div>
+      <div style="font-size:11px; color:#8a919e; margin-bottom:4px;">Active App Modules (Tap × to delete only that part):</div>
+      <div id="module-list"></div>
+    </div>
+
+    <div id="ai-log" style="background:#0b0e14; border:1px solid #2a2e39; padding:8px; border-radius:6px; font-size:12px; color:#00e676; min-height:45px; max-height:110px; overflow-y:auto;">
+      ✅ Tayar hai! Yahan apna koi bhi command likhein (Ex: "Camera add karo", "Calculator lagao", ya "Color change karo").
+    </div>
+
+    <div style="display:flex; gap:6px;">
+      <input type="text" id="aiCommand" class="inp" placeholder="e.g. 'Live Camera add karo'...">
+      <button class="btn" id="sendBtn" onclick="runAIArchitect()">Build</button>
+    </div>
+  </div>
+
+  <script>
+    const defaultSystem = {
+      customCSS: "",
+      modules: [
+        {
+          id: "pine_tester",
+          name: "Pine EMA Tester",
+          html: `
+            <div class="bar" style="background:#181d2c; justify-content:space-between;">
+              <span style="font-size:11px; font-weight:bold; color:#00e676;">📜 Pine EMA:</span>
+              <div style="display:flex; gap:4px; align-items:center;">
+                <input type="number" id="fastEma" value="9" style="width:42px; padding:4px; background:#0b0e14; color:#fff; border:1px solid #2a2e39; border-radius:4px; font-size:11px;">
+                <input type="number" id="slowEma" value="21" style="width:42px; padding:4px; background:#0b0e14; color:#fff; border:1px solid #2a2e39; border-radius:4px; font-size:11px;">
+                <button class="btn" style="padding:4px 8px; font-size:11px;" onclick="window.runPineSim()">Test</button>
+              </div>
+              <span id="pineResult" style="font-size:11px; color:#ffeb3b; font-weight:bold;">Win: 68% | +14.2%</span>
+            </div>
+          `,
+          js: `
+            window.runPineSim = async function() {
+              const f = parseInt(document.getElementById('fastEma').value) || 9;
+              const s = parseInt(document.getElementById('slowEma').value) || 21;
+              const out = document.getElementById('pineResult');
+              out.innerText = "⏳ Testing...";
+              try {
+                const r = await fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=15m&limit=200');
+                const d = await r.json();
+                const closes = d.map(x => parseFloat(x[4]));
+                const calcEma = (arr, len) => {
+                  let k = 2/(len+1), e = arr[0], res = [];
+                  arr.forEach(v => { e = v*k + e*(1-k); res.push(e); });
+                  return res;
+                };
+                const fe = calcEma(closes, f), se = calcEma(closes, s);
+                let pos = 0, entry = 0, pnl = 0, wins = 0, trades = 0;
+                for(let i=1; i<closes.length; i++) {
+                  if(fe[i-1] <= se[i-1] && fe[i] > se[i] && pos === 0) { pos = 1; entry = closes[i]; }
+                  else if(fe[i-1] >= se[i-1] && fe[i] < se[i] && pos === 1) {
+                    let p = ((closes[i] - entry)/entry)*100;
+                    pnl += p; trades++; if(p > 0) wins++; pos = 0;
+                  }
+                }
+                let wr = trades ? Math.round((wins/trades)*100) : 0;
+                out.style.color = pnl >= 0 ? '#00e676' : '#ff5252';
+                out.innerText = 'Signals: ' + trades + ' | Win: ' + wr + '% | PnL: ' + pnl.toFixed(2) + '%';
+              } catch(e) {
+                out.innerText = 'EMA(' + f + '/' + s + ') Active';
+              }
+            };
+            window.runPineSim();
+          `
+        },
+        {
+          id: "top_controls",
+          name: "Search & Watchlist",
+          html: `
+            <div class="bar">
+              <input type="text" id="symInp" class="inp" placeholder="Symbol (e.g. RELIANCE, BTCUSDT, XAUUSD)">
+              <button class="btn" onclick="window.loadSym(document.getElementById('symInp').value)">Go</button>
+            </div>
+            <div class="bar" id="wlBar">
+              <div class="chip active" onclick="window.loadSym('BINANCE:BTCUSDT', '15', this)">BITCOIN (15m)</div>
+              <div class="chip" onclick="window.loadSym('OANDA:XAUUSD', '15', this)">GOLD (15m)</div>
+              <div class="chip" onclick="window.loadSym('BSE:SENSEX', 'D', this)">SENSEX (D)</div>
+              <div class="chip" onclick="window.loadSym('BSE:RELIANCE', 'D', this)">RELIANCE (D)</div>
+              <div class="chip" onclick="window.loadSym('BSE:TCS', 'D', this)">TCS (D)</div>
+              <div class="chip" onclick="window.loadSym('BSE:HDFCBANK', 'D', this)">HDFC (D)</div>
+            </div>
+            <div class="bar">
+              <span style="font-size:10px; color:#888; font-weight:bold;">IND:</span>
+              <div class="chip active" onclick="window.toggleStudy('MASimple@tv-basicstudies', this)">SMA</div>
+              <div class="chip" onclick="window.toggleStudy('MAExp@tv-basicstudies', this)">EMA</div>
+              <div class="chip active" onclick="window.toggleStudy('RSI@tv-basicstudies', this)">RSI</div>
+              <div class="chip" onclick="window.toggleStudy('MACD@tv-basicstudies', this)">MACD</div>
+              <div class="chip" onclick="window.toggleStudy('BB@tv-basicstudies', this)">Bollinger</div>
+              <div class="chip" onclick="window.toggleStudy('VWAP@tv-basicstudies', this)">VWAP</div>
+            </div>
+          `,
+          js: `
+            window.currentSym = window.currentSym || 'BINANCE:BTCUSDT';
+            window.currentTf = window.currentTf || '15';
+            window.activeStudies = window.activeStudies || ['MASimple@tv-basicstudies', 'RSI@tv-basicstudies'];
+            window.loadSym = function(s, tf, el) {
+              if(!s) return;
+              s = s.trim().toUpperCase();
+              if(!s.includes(':')) s = 'BSE:' + s;
+              window.currentSym = s;
+              window.currentTf = tf || (s.startsWith('BSE:') ? 'D' : '15');
+              if(el) {
+                document.querySelectorAll('#wlBar .chip').forEach(c => c.classList.remove('active'));
+                el.classList.add('active');
+              }
+              if(window.renderMainChart) window.renderMainChart();
+            };
+            window.toggleStudy = function(st, el) {
+              let i = window.activeStudies.indexOf(st);
+              if(i > -1) { window.activeStudies.splice(i, 1); el.classList.remove('active'); }
+              else { window.activeStudies.push(st); el.classList.add('active'); }
+              if(window.renderMainChart) window.renderMainChart();
+            };
+          `
+        },
+        {
+          id: "main_chart",
+          name: "TradingView Chart",
+          html: `<div id="tv_chart_container" style="width:100%; height:calc(100vh - 165px);"></div>`,
+          js: `
+            window.renderMainChart = function() {
+              const box = document.getElementById('tv_chart_container');
+              if(!box) return;
+              box.innerHTML = '';
+              new TradingView.widget({
+                "autosize": true,
+                "symbol": window.currentSym || "BINANCE:BTCUSDT",
+                "interval": window.currentTf || "15",
+                "timezone": "Asia/Kolkata",
+                "theme": "dark",
+                "style": "1",
+                "locale": "in",
+                "enable_publishing": false,
+                "hide_top_toolbar": false,
+                "save_image": false,
+                "container_id": "tv_chart_container",
+                "studies": window.activeStudies || []
+              });
+            };
+            window.renderMainChart();
+          `
+        }
+      ]
+    };
+
+    let appState = JSON.parse(localStorage.getItem('modular_os_v6')) || JSON.parse(JSON.stringify(defaultSystem));
+    const savedK = localStorage.getItem('gemini_os_key_v6');
+    if (savedK) document.getElementById('geminiKey').value = savedK;
+
+    function saveState() { localStorage.setItem('modular_os_v6', JSON.stringify(appState)); }
+    function saveApiKey() { localStorage.setItem('gemini_os_key_v6', document.getElementById('geminiKey').value.trim()); }
+    function toggleAI() { document.getElementById('ai-drawer').classList.toggle('open'); }
+
+    function mountAllModules() {
+      let styleTag = document.getElementById('ai-dynamic-css');
+      if (!styleTag) {
+        styleTag = document.createElement('style');
+        styleTag.id = 'ai-dynamic-css';
+        document.head.appendChild(styleTag);
+      }
+      styleTag.innerHTML = appState.customCSS || "";
+
+      const ws = document.getElementById('app-workspace');
+      ws.innerHTML = '';
+
+      appState.modules.forEach(mod => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'module-box';
+        wrapper.id = 'mod_' + mod.id;
+        wrapper.innerHTML = mod.html;
+        ws.appendChild(wrapper);
+        if (mod.js) {
+          try { new Function(mod.js)(); } catch (e) { console.error(e); }
+        }
+      });
+      renderModuleBadges();
+    }
+
+    function mountSingleModule(mod) {
+      let existing = document.getElementById('mod_' + mod.id);
+      if (existing) {
+        existing.innerHTML = mod.html;
+      } else {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'module-box';
+        wrapper.id = 'mod_' + mod.id;
+        wrapper.innerHTML = mod.html;
+        document.getElementById('app-workspace').insertBefore(wrapper, document.getElementById('app-workspace').firstChild);
+      }
+      if (mod.js) {
+        try { new Function(mod.js)(); } catch (e) { console.error(e); }
+      }
+      renderModuleBadges();
+    }
+
+    function removeModule(id) {
+      appState.modules = appState.modules.filter(m => m.id !== id);
+      const el = document.getElementById('mod_' + id);
+      if (el) el.remove();
+      saveState();
+      renderModuleBadges();
+    }
+
+    function renderModuleBadges() {
+      const list = document.getElementById('module-list');
+      list.innerHTML = '';
+      appState.modules.forEach(m => {
+        const badge = document.createElement('div');
+        badge.className = 'mod-tag';
+        badge.innerHTML = `${m.name} <span onclick="removeModule('${m.id}')">×</span>`;
+        list.appendChild(badge);
+      });
+    }
+
+    function factoryReset() {
+      appState = JSON.parse(JSON.stringify(defaultSystem));
+      saveState();
+      mountAllModules();
+    }
+
+    async function runAIArchitect() {
+      const key = document.getElementById('geminiKey').value.trim();
+      const model = document.getElementById('modelName').value.trim() || 'gemini-3.8-flash';
+      const cmd = document.getElementById('aiCommand').value.trim();
+      const log = document.getElementById('ai-log');
+      if (!cmd) return;
+
+      saveApiKey();
+      log.style.color = "#ffeb3b";
+      log.innerText = "⚡ AI (" + model + ") aapka feature bana raha hai...";
+      document.getElementById('sendBtn').disabled = true;
+
+      const systemPrompt = `
+You are an unrestricted Full-Access In-App AI Architect embedded inside a mobile HTML5 web app.
+Current active module IDs and HTML: ${JSON.stringify(appState.modules.map(m => ({id: m.id, name: m.name})))}
+
+User request: "${cmd}"
+
+INSTRUCTIONS:
+1. Build ANYTHING the user asks for (e.g., Live Camera using navigator.mediaDevices.getUserMedia, Calculator, Notes, custom indicators, UI/color changes).
+2. SURGICAL UPDATE RULE: Only modify the specific module requested, or create a new module if adding a new feature.
+3. Return ONLY a raw JSON object matching this exact structure (no markdown backticks):
+{
+  "action": "upsert_module",
+  "module": {
+    "id": "unique_snake_case_id",
+    "name": "Short Module Name",
+    "html": "<div style='padding:10px; background:#181d2c; border-bottom:1px solid #2a2e39;'>...</div>",
+    "js": "// pure JS code to run on mount"
+  },
+  "customCSS": "",
+  "message": "Friendly Hinglish confirmation message"
+}`;
+
+      try {
+        let res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: systemPrompt }] }],
+            generationConfig: { responseMimeType: "application/json" }
+          })
+        });
+
+        let data = await res.json();
+        if (data.error) throw new Error(data.error.message);
+
+        let raw = data.candidates[0].content.parts[0].text.trim();
+        let jsonMatch = raw.match(/\{[\s\S]*\}/);
+        let plan = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+
+        if (plan.customCSS) {
+          appState.customCSS = plan.customCSS;
+          document.getElementById('ai-dynamic-css').innerHTML = appState.customCSS;
+          saveState();
+        }
+
+        if (plan.action === "upsert_module" && plan.module && plan.module.id) {
+          const idx = appState.modules.findIndex(m => m.id === plan.module.id);
+          if (idx > -1) appState.modules[idx] = plan.module;
+          else appState.modules.unshift(plan.module);
+          saveState();
+          mountSingleModule(plan.module);
+        }
+
+        log.style.color = "#00e676";
+        log.innerText = "🤖 AI: " + (plan.message || "Aapka feature add ho gaya!");
+        document.getElementById('aiCommand').value = '';
+      } catch (err) {
+        log.style.color = "#ff5252";
+        log.innerText = "❌ Error: " + err.message;
+      } finally {
+        document.getElementById('sendBtn').disabled = false;
+      }
+    }
+
+    mountAllModules();
+  </script>
+</body>
+</html>
