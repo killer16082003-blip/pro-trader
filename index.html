@@ -5,8 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Pro Modular OS v6</title>
   
-  <!-- Embedded Manifest for Direct PWABuilder Detection -->
-  <link rel="manifest" href='data:application/manifest+json;charset=utf-8,{"name":"My Pro Trader","short_name":"Trader","start_url":"./","display":"standalone","background_color":"#0b0e14","theme_color":"#2962ff"}'>
+  <!-- Clean External Link for PWABuilder & GitHub Pages -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2962ff">
 
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
   <style id="global-custom-css">
@@ -20,15 +21,24 @@
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-    #app-workspace { flex: 1; display: flex; flex-direction: column; overflow-y: auto; width: 100%; height: 100%; }
-    .module-box { width: 100%; position: relative; }
     
-    .bar { display: flex; gap: 6px; padding: 7px 8px; background: var(--panel); border-bottom: 1px solid var(--border); align-items: center; overflow-x: auto; scrollbar-width: none; }
+    #top-os-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #0f131d; border-bottom: 1px solid var(--border); }
+    .os-brand { display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 13px; letter-spacing: 0.5px; }
+    .status-dot { width: 8px; height: 8px; background: #00e676; border-radius: 50%; display: inline-block; box-shadow: 0 0 6px #00e676; }
+    .os-actions { display: flex; gap: 6px; align-items: center; }
+
+    #app-workspace { flex: 1; display: flex; flex-direction: column; overflow-y: auto; width: 100%; height: 100%; }
+    .module-box { width: 100%; position: relative; border-bottom: 1px solid var(--border); }
+    
+    .bar { display: flex; gap: 6px; padding: 7px 8px; background: var(--panel); align-items: center; overflow-x: auto; scrollbar-width: none; flex-wrap: wrap; }
     .bar::-webkit-scrollbar { display: none; }
-    .inp { flex: 1; min-width: 90px; padding: 7px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--input); color: var(--text); font-size: 12px; outline: none; }
-    .btn { padding: 7px 11px; background: var(--accent); color: #fff; border: none; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; white-space: nowrap; }
+    .inp { flex: 1; min-width: 90px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--input); color: var(--text); font-size: 12px; outline: none; }
+    .btn { padding: 6px 11px; background: var(--accent); color: #fff; border: none; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; white-space: nowrap; }
     .chip { padding: 5px 10px; background: var(--input); border: 1px solid var(--border); border-radius: 5px; color: #b2b5be; font-size: 11px; white-space: nowrap; cursor: pointer; }
     .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .badge-green { background: rgba(0, 230, 118, 0.12); color: #00e676; border: 1px solid rgba(0, 230, 118, 0.3); padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+    .mod-ctrl { display: inline-flex; gap: 8px; color: #8a919e; font-size: 12px; margin-left: auto; align-items: center; }
+    .mod-ctrl span { cursor: pointer; padding: 2px 4px; }
 
     #ai-fab { position: fixed; bottom: 16px; right: 16px; background: linear-gradient(135deg, #00e676, #2962ff); color: #fff; border: none; border-radius: 50px; padding: 10px 16px; font-weight: bold; font-size: 13px; box-shadow: 0 4px 15px rgba(0,0,0,0.6); z-index: 9999; cursor: pointer; display: flex; align-items: center; gap: 6px; }
     #ai-drawer { position: fixed; bottom: -100%; left: 0; width: 100%; max-height: 85vh; background: #131722; border-top: 2px solid #00e676; border-radius: 16px 16px 0 0; padding: 14px; transition: 0.3s ease; z-index: 10000; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 -10px 30px rgba(0,0,0,0.8); }
@@ -39,9 +49,23 @@
 </head>
 <body>
 
+  <!-- Top OS Header Bar -->
+  <div id="top-os-header">
+    <div class="os-brand">
+      <span class="status-dot"></span>
+      <div>PRO MODULAR OS <span style="color:#00e676; display:block; font-size:11px;">v6</span></div>
+    </div>
+    <div class="os-actions">
+      <button class="btn" style="padding:5px 9px;" onclick="toggleAI()" title="Add Module">+</button>
+      <button class="btn" style="padding:5px 9px; background:#1e222d; border:1px solid #2a2e39;" onclick="toggleAI()">&lt;/&gt;</button>
+      <button class="btn" style="padding:5px 9px; background:#1e222d; border:1px solid #2a2e39;" onclick="factoryReset()" title="Reset OS">↻</button>
+      <button class="btn" onclick="toggleAI()">✨ AI Builder</button>
+    </div>
+  </div>
+
   <div id="app-workspace"></div>
 
-  <button id="ai-fab" onclick="toggleAI()">🚀 AI Builder</button>
+  <button id="ai-fab" onclick="toggleAI()">✨ 🚀 AI Builder</button>
 
   <div id="ai-drawer">
     <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #2a2e39; padding-bottom:8px;">
@@ -53,8 +77,8 @@
     </div>
 
     <div style="display:flex; gap:6px;">
-      <input type="text" id="geminiKey" class="inp" value="AQ.Ab8RN6JUfzPWRr_oI8estK3YogPaTtkrsHj7he0knZKxfFLyJg" onchange="saveApiKey()">
-      <input type="text" id="modelName" class="inp" style="max-width:135px; color:#00e676; font-weight:bold;" value="gemini-3.8-flash" title="Model Name">
+      <input type="text" id="geminiKey" class="inp" placeholder="Paste Gemini API Key here..." onchange="saveApiKey()">
+      <input type="text" id="modelName" class="inp" style="max-width:135px; color:#00e676; font-weight:bold;" value="gemini-2.5-flash" title="Model Name">
     </div>
     
     <div>
@@ -80,24 +104,38 @@
           id: "pine_tester",
           name: "Pine EMA Tester",
           html: `
-            <div class="bar" style="background:#181d2c; justify-content:space-between;">
-              <span style="font-size:11px; font-weight:bold; color:#00e676;">📜 Pine EMA:</span>
-              <div style="display:flex; gap:4px; align-items:center;">
-                <input type="number" id="fastEma" value="9" style="width:42px; padding:4px; background:#0b0e14; color:#fff; border:1px solid #2a2e39; border-radius:4px; font-size:11px;">
-                <input type="number" id="slowEma" value="21" style="width:42px; padding:4px; background:#0b0e14; color:#fff; border:1px solid #2a2e39; border-radius:4px; font-size:11px;">
-                <button class="btn" style="padding:4px 8px; font-size:11px;" onclick="window.runPineSim()">Test</button>
+            <div class="bar" style="background:#131722; justify-content:space-between;">
+              <div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap; width:100%;">
+                <span style="font-size:11px; font-weight:bold; color:#00e676;">📈 Pine EMA Tester:</span>
+                <span style="font-size:10px; color:#8a919e;">Fast:</span>
+                <input type="number" id="fastEma" value="9" style="width:38px; padding:4px; background:#0b0e14; color:#fff; border:1px solid #2a2e39; border-radius:4px; font-size:11px;">
+                <span style="font-size:10px; color:#8a919e;">Slow:</span>
+                <input type="number" id="slowEma" value="21" style="width:38px; padding:4px; background:#0b0e14; color:#fff; border:1px solid #2a2e39; border-radius:4px; font-size:11px;">
+                <select id="emaTf" style="padding:4px; background:#0b0e14; color:#fff; border:1px solid #2a2e39; border-radius:4px; font-size:11px;">
+                  <option value="15m">15m</option>
+                  <option value="5m">5m</option>
+                  <option value="1h">1h</option>
+                </select>
+                <button class="btn" style="padding:4px 10px; font-size:11px;" onclick="window.runPineSim()">⚡ Test</button>
               </div>
-              <span id="pineResult" style="font-size:11px; color:#ffeb3b; font-weight:bold;">Win: 68% | +14.2%</span>
+              <div style="display:flex; align-items:center; justify-content:space-between; width:100%; margin-top:4px;">
+                <span id="pineResult" class="badge-green">Win: 68% | +14.2%</span>
+                <div class="mod-ctrl">
+                  <span onclick="toggleAI()">&lt;/&gt;</span>
+                  <span onclick="removeModule('pine_tester')">✕</span>
+                </div>
+              </div>
             </div>
           `,
           js: `
             window.runPineSim = async function() {
               const f = parseInt(document.getElementById('fastEma').value) || 9;
               const s = parseInt(document.getElementById('slowEma').value) || 21;
+              const tf = document.getElementById('emaTf') ? document.getElementById('emaTf').value : '15m';
               const out = document.getElementById('pineResult');
               out.innerText = "⏳ Testing...";
               try {
-                const r = await fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=15m&limit=200');
+                const r = await fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=' + tf + '&limit=200');
                 const d = await r.json();
                 const closes = d.map(x => parseFloat(x[4]));
                 const calcEma = (arr, len) => {
@@ -115,10 +153,9 @@
                   }
                 }
                 let wr = trades ? Math.round((wins/trades)*100) : 0;
-                out.style.color = pnl >= 0 ? '#00e676' : '#ff5252';
-                out.innerText = 'Signals: ' + trades + ' | Win: ' + wr + '% | PnL: ' + pnl.toFixed(2) + '%';
+                out.innerText = 'Win: ' + wr + '% | ' + (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + '%';
               } catch(e) {
-                out.innerText = 'EMA(' + f + '/' + s + ') Active';
+                out.innerText = 'EMA(' + f + '/' + s + ') Ready';
               }
             };
             window.runPineSim();
@@ -129,19 +166,23 @@
           name: "Search & Watchlist",
           html: `
             <div class="bar">
-              <input type="text" id="symInp" class="inp" placeholder="Symbol (e.g. RELIANCE, BTCUSDT, XAUUSD)">
+              <input type="text" id="symInp" class="inp" placeholder="Symbol (e.g. RELIANCE, BTCUSDT)">
               <button class="btn" onclick="window.loadSym(document.getElementById('symInp').value)">Go</button>
+              <span id="activeSymBadge" class="badge-green">BINANCE:BTCUSDT</span>
+              <div class="mod-ctrl">
+                <span onclick="removeModule('top_controls')">✕</span>
+              </div>
             </div>
-            <div class="bar" id="wlBar">
+            <div class="bar" id="wlBar" style="flex-wrap:nowrap;">
+              <span style="font-size:10px; color:#8a919e; font-weight:bold;">WATCHLIST:</span>
               <div class="chip active" onclick="window.loadSym('BINANCE:BTCUSDT', '15', this)">BITCOIN (15m)</div>
               <div class="chip" onclick="window.loadSym('OANDA:XAUUSD', '15', this)">GOLD (15m)</div>
               <div class="chip" onclick="window.loadSym('BSE:SENSEX', 'D', this)">SENSEX (D)</div>
               <div class="chip" onclick="window.loadSym('BSE:RELIANCE', 'D', this)">RELIANCE (D)</div>
               <div class="chip" onclick="window.loadSym('BSE:TCS', 'D', this)">TCS (D)</div>
-              <div class="chip" onclick="window.loadSym('BSE:HDFCBANK', 'D', this)">HDFC (D)</div>
             </div>
-            <div class="bar">
-              <span style="font-size:10px; color:#888; font-weight:bold;">IND:</span>
+            <div class="bar" style="flex-wrap:nowrap;">
+              <span style="font-size:10px; color:#8a919e; font-weight:bold;">IND:</span>
               <div class="chip active" onclick="window.toggleStudy('MASimple@tv-basicstudies', this)">SMA</div>
               <div class="chip" onclick="window.toggleStudy('MAExp@tv-basicstudies', this)">EMA</div>
               <div class="chip active" onclick="window.toggleStudy('RSI@tv-basicstudies', this)">RSI</div>
@@ -160,6 +201,8 @@
               if(!s.includes(':')) s = 'BSE:' + s;
               window.currentSym = s;
               window.currentTf = tf || (s.startsWith('BSE:') ? 'D' : '15');
+              const b = document.getElementById('activeSymBadge');
+              if(b) b.innerText = s;
               if(el) {
                 document.querySelectorAll('#wlBar .chip').forEach(c => c.classList.remove('active'));
                 el.classList.add('active');
@@ -177,10 +220,26 @@
         {
           id: "main_chart",
           name: "TradingView Chart",
-          html: `<div id="tv_chart_container" style="width:100%; height:calc(100vh - 165px);"></div>`,
+          html: `
+            <div class="bar" style="justify-content:space-between; background:#0f131d;">
+              <div style="display:flex; gap:6px; align-items:center;">
+                <span style="font-size:11px; font-weight:bold; color:#e1e3e6;" id="chartLabel">📊 BINANCE:BTCUSDT [15]</span>
+                <span class="badge-green" style="font-size:10px;">Live Stream</span>
+              </div>
+              <button class="btn" style="padding:4px 8px; font-size:11px;" onclick="window.toggleFullChart()">↗ Full</button>
+            </div>
+            <div id="tv_chart_container" style="width:100%; height:calc(100vh - 240px);"></div>
+          `,
           js: `
+            window.toggleFullChart = function() {
+              const c = document.getElementById('tv_chart_container');
+              if(c.style.height === '88vh') c.style.height = 'calc(100vh - 240px)';
+              else c.style.height = '88vh';
+            };
             window.renderMainChart = function() {
               const box = document.getElementById('tv_chart_container');
+              const lbl = document.getElementById('chartLabel');
+              if(lbl) lbl.innerText = '📊 ' + (window.currentSym || 'BINANCE:BTCUSDT') + ' [' + (window.currentTf || '15') + ']';
               if(!box) return;
               box.innerHTML = '';
               new TradingView.widget({
@@ -281,7 +340,7 @@
 
     async function runAIArchitect() {
       const key = document.getElementById('geminiKey').value.trim();
-      const model = document.getElementById('modelName').value.trim() || 'gemini-3.8-flash';
+      const model = document.getElementById('modelName').value.trim() || 'gemini-2.5-flash';
       const cmd = document.getElementById('aiCommand').value.trim();
       const log = document.getElementById('ai-log');
       if (!cmd) return;
@@ -318,44 +377,4 @@ INSTRUCTIONS:
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: systemPrompt }] }],
-            generationConfig: { responseMimeType: "application/json" }
-          })
-        });
-
-        let data = await res.json();
-        if (data.error) throw new Error(data.error.message);
-
-        let raw = data.candidates[0].content.parts[0].text.trim();
-        let jsonMatch = raw.match(/\{[\s\S]*\}/);
-        let plan = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
-
-        if (plan.customCSS) {
-          appState.customCSS = plan.customCSS;
-          document.getElementById('ai-dynamic-css').innerHTML = appState.customCSS;
-          saveState();
-        }
-
-        if (plan.action === "upsert_module" && plan.module && plan.module.id) {
-          const idx = appState.modules.findIndex(m => m.id === plan.module.id);
-          if (idx > -1) appState.modules[idx] = plan.module;
-          else appState.modules.unshift(plan.module);
-          saveState();
-          mountSingleModule(plan.module);
-        }
-
-        log.style.color = "#00e676";
-        log.innerText = "🤖 AI: " + (plan.message || "Aapka feature add ho gaya!");
-        document.getElementById('aiCommand').value = '';
-      } catch (err) {
-        log.style.color = "#ff5252";
-        log.innerText = "❌ Error: " + err.message;
-      } finally {
-        document.getElementById('sendBtn').disabled = false;
-      }
-    }
-
-    mountAllModules();
-  </script>
-</body>
-</html>
+            
