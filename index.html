@@ -377,4 +377,44 @@ INSTRUCTIONS:
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            
+            contents: [{ parts: [{ text: systemPrompt }] }],
+            generationConfig: { responseMimeType: "application/json" }
+          })
+        });
+
+        let data = await res.json();
+        if (data.error) throw new Error(data.error.message);
+
+        let raw = data.candidates[0].content.parts[0].text.trim();
+        let jsonMatch = raw.match(/\{[\s\S]*\}/);
+        let plan = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+
+        if (plan.customCSS) {
+          appState.customCSS = plan.customCSS;
+          document.getElementById('ai-dynamic-css').innerHTML = appState.customCSS;
+          saveState();
+        }
+
+        if (plan.action === "upsert_module" && plan.module && plan.module.id) {
+          const idx = appState.modules.findIndex(m => m.id === plan.module.id);
+          if (idx > -1) appState.modules[idx] = plan.module;
+          else appState.modules.unshift(plan.module);
+          saveState();
+          mountSingleModule(plan.module);
+        }
+
+        log.style.color = "#00e676";
+        log.innerText = "🤖 AI: " + (plan.message || "Aapka feature add ho gaya!");
+        document.getElementById('aiCommand').value = '';
+      } catch (err) {
+        log.style.color = "#ff5252";
+        log.innerText = "❌ Error: " + err.message;
+      } finally {
+        document.getElementById('sendBtn').disabled = false;
+      }
+    }
+
+    mountAllModules();
+  </script>
+</body>
+</html>
